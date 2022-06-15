@@ -1,0 +1,56 @@
+# This is a sample build configuration for Other.
+# Check our guides at https://confluence.atlassian.com/x/5Q4SMw for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+image: node:12.18.2
+
+pipelines:
+  branches:
+    master:
+      - step:
+          name: Build
+          script:
+            - npm install
+            - npm run build
+          artifacts:
+            - dist/**
+      - step:
+          name: Deploy
+          deployment: production
+          script:
+            - pipe: atlassian/aws-s3-deploy:0.2.4
+              variables:
+                AWS_ACCESS_KEY_ID: $ID_PRODUCTION
+                AWS_SECRET_ACCESS_KEY: $SECRET_PRODUCTION
+                AWS_DEFAULT_REGION: "ap-southeast-2"
+                S3_BUCKET: "de-v3.client.com.au"
+                ACL: "public-read"
+                LOCAL_PATH: "dist"
+            - pipe: atlassian/aws-cloudfront-invalidate:0.3.3
+              variables:
+                AWS_ACCESS_KEY_ID: $ID_PRODUCTION
+                AWS_SECRET_ACCESS_KEY: $SECRET_PRODUCTION
+                AWS_DEFAULT_REGION: ap-southeast-2
+                DISTRIBUTION_ID: 'E3HZKNH1KPHUY9'
+                PATHS: '/*'
+    staging:
+      - step:
+          name: Build
+          script:
+            - npm install
+            - npm run build
+          artifacts:
+            - dist/**
+      - step:
+          name: Deploy
+          deployment: production
+          script:
+            - pipe: atlassian/aws-s3-deploy:0.2.4
+              variables:
+                AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID_STAGING
+                AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY_STAGING
+                AWS_DEFAULT_REGION: "ap-southeast-2"
+                S3_BUCKET: "de-v3"
+                ACL: "public-read"
+                LOCAL_PATH: "dist"
